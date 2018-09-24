@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "220345294625",
+    "firebase_url": "https://text-recognition-69f4a.firebaseio.com",
+    "project_id": "text-recognition-69f4a",
+    "storage_bucket": "text-recognition-69f4a.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:220345294625:android:1eddedc3add100c5",
+        "android_client_info": {
+          "package_name": "com.indieteam.cameratranslate"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "220345294625-7u7gtvm7su8mqhnpltan7j6ohhfu4sit.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAXTc0qg8VliQ4VVxKA5C3wJ7xq2HhQz9M"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
