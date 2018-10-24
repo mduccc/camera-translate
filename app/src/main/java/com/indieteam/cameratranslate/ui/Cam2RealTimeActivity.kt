@@ -1,6 +1,7 @@
 package com.indieteam.cameratranslate.ui
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -25,6 +26,7 @@ import android.util.Log
 import android.util.SparseIntArray
 import android.view.Surface
 import android.view.TextureView
+import android.widget.RelativeLayout
 import com.google.firebase.ml.vision.common.FirebaseVisionImageMetadata
 import com.indieteam.cameratranslate.R
 import com.indieteam.cameratranslate.process.TextRecognizeInImage
@@ -41,7 +43,7 @@ class Cam2RealTimeActivity : AppCompatActivity() {
     var sWidth = 0
     var sHeight = 0
     private var previewWidth = 0
-    private var previewHeight = 0
+    var previewHeight = 0
     private var camWidth = 0
     private var camHeight = 0
     private var cameraCharacteristics: CameraCharacteristics? = null
@@ -113,10 +115,16 @@ class Cam2RealTimeActivity : AppCompatActivity() {
     inner class CameraPreview {
 
         fun startPreview() {
-            val params = texture_preview.layoutParams as ConstraintLayout.LayoutParams
-            params.apply { width = previewWidth; height = previewHeight }
-            texture_preview.layoutParams = params
+            val texture_view_params = texture_preview.layoutParams as ConstraintLayout.LayoutParams
+            texture_view_params.apply { width = previewWidth; height = previewHeight }
+            texture_preview.layoutParams = texture_view_params
 
+            val detected_layout_params = detected_layout.layoutParams as ConstraintLayout.LayoutParams
+            detected_layout_params.apply { width = previewWidth; height = previewHeight }
+            detected_layout.layoutParams = detected_layout_params
+
+            drawArea = DrawArea(this@Cam2RealTimeActivity)
+            cam_realtime_layout.addView(drawArea)
             val surfaceTexture = texture_preview.surfaceTexture
             //Do phan giai nay se hien thi o tren man hinh preview
             surfaceTexture.setDefaultBufferSize(previewWidth, previewHeight)
@@ -252,8 +260,6 @@ class Cam2RealTimeActivity : AppCompatActivity() {
 
     private fun run() {
         textureViewListen()
-        drawArea = DrawArea(this)
-        cam_root_view.addView(drawArea)
     }
 
     companion object {
@@ -277,6 +283,7 @@ class Cam2RealTimeActivity : AppCompatActivity() {
         }
     }
 
+    @SuppressLint("InvalidWakeLockTag")
     override fun onResume() {
         super.onResume()
         wakeScreen = power.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "wakeScreen")

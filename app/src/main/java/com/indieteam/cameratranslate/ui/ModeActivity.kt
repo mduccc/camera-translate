@@ -34,7 +34,7 @@ class ModeActivity : AppCompatActivity() {
             val intent = Intent(this, ResultActivity::class.java)
             intent.putExtra("uriPhoto", data.dataString)
             startActivity(intent)
-        }else{ Toast.makeText(this, "receive image data false", Toast.LENGTH_SHORT).show() }
+        }
     }
 
     private fun checkPermission(){

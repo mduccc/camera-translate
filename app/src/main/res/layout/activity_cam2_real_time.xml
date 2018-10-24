@@ -2,7 +2,7 @@
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/cam_root_view"
+    android:id="@+id/cam_realtime_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".ui.Cam2RealTimeActivity">
@@ -11,45 +11,59 @@
         android:id="@+id/texture_preview"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHeight_default="percent"
         app:layout_constraintHeight_percent="0.8"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <ScrollView
+    <RelativeLayout
+        android:id="@+id/detected_layout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
+        android:gravity="center"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHeight_default="percent"
-        app:layout_constraintHeight_percent="0.2"
-        app:layout_constraintStart_toStartOf="parent">
+        app:layout_constraintHeight_percent="0.8"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-        <RelativeLayout
+        <ScrollView
+            android:id="@+id/scroll_view_detected"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_marginTop="30dp">
 
             <TextView
-                android:id="@+id/title"
-                android:layout_width="match_parent"
+                android:id="@+id/text_detected"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Result"
-                android:textColor="@color/colorPrimary"
-                android:textStyle="bold"
-                android:textSize="18sp"
-                android:gravity="center_horizontal"/>
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:background="@color/colorBlack"
+                android:textColor="@color/colorWhite" />
+        </ScrollView>
+
+        <ScrollView
+            android:id="@+id/scroll_view_translated"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_marginBottom="30dp">
 
             <TextView
-                android:id="@+id/result"
-                android:layout_width="match_parent"
+                android:id="@+id/text_translated"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:gravity="center_horizontal"
-                android:textColor="@color/colorGreen"
-                android:layout_below="@+id/title"/>
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:background="@color/colorBlack"
+                android:textColor="@color/colorWhite" />
+        </ScrollView>
 
-        </RelativeLayout>
-
-    </ScrollView>
+    </RelativeLayout>
 
 </android.support.constraint.ConstraintLayout>

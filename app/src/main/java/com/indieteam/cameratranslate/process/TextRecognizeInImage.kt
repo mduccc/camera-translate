@@ -16,10 +16,8 @@ class TextRecognizeInImage(private val context: Context, private val mode: Strin
     private val textRecognizer = FirebaseVision.getInstance()
             .onDeviceTextRecognizer
 
-    private var resultForText = ""
-    private var resultForTranslate = ""
     private var localResult = ""
-    val cloudTranslate = CloudTranslate()
+    private val cloudTranslate = CloudTranslate()
 
     init {
         if (mode == "RealTime")
@@ -27,54 +25,68 @@ class TextRecognizeInImage(private val context: Context, private val mode: Strin
         else
             cloudTranslate.init(context, "one")
     }
-/*
-    private var imgWidth = 0
-    private var imgHeight = 0
-*/
 
     private fun updateRealTime(){
-        (context as Cam2RealTimeActivity).frame = 1
-        context.apply {
-            runOnUiThread { result.text = this@TextRecognizeInImage.resultForText }
+        (context as Cam2RealTimeActivity).apply {
+            runOnUiThread { text_detected.text = localResult }
             frame = 0
-            cloudTranslate.toVietnamese(this@TextRecognizeInImage.resultForTranslate)
+            cloudTranslate.toVietnamese(localResult)
         }
     }
 
     private fun updateOne(){
         (context as ResultActivity).apply {
-            runOnUiThread { result_.text = this@TextRecognizeInImage.resultForText }
-            cloudTranslate.toVietnamese(this@TextRecognizeInImage.resultForTranslate)
+            runOnUiThread { result_.text = localResult }
+            cloudTranslate.toVietnamese(localResult)
         }
     }
 
     fun run(image: Image?, rotation: Int?, uri: Uri?){
-       /* imgWidth = image!!.width
-        imgHeight = image.height*/
         localResult = ""
         val imageVision: FirebaseVisionImage
         if (mode == "RealTime") {
             (context as Cam2RealTimeActivity).frame = 1
             imageVision = FirebaseVisionImage.fromMediaImage(image!!, rotation!!)
         }else{ imageVision = FirebaseVisionImage.fromFilePath(context as ResultActivity, uri!!) }
+
         textRecognizer.processImage(imageVision)
                 .addOnCompleteListener { it ->
-                    Log.d("Recognizer Listen", "True")
+                    it.result?.let { it ->
+                        for (block in it.textBlocks){
+                            block.confidence?.let {
+                                Log.d("confidence", it.toString())
+                            }
+                            for (line in block.lines){
+                                for (element in line.elements){
+                                    Log.d("element", element.text.toString())
+                                    localResult += element.text + " "
+                                }
+                                localResult += "\n"
+                            }
+                        }
+                        Log.d("Text", localResult)
+                        if (localResult.isNotBlank()) {
+                            localResult = localResult.trim()
+                            if (mode == "RealTime") updateRealTime() else updateOne()
+                        }else {
+                            (context as Cam2RealTimeActivity).apply {
+                                runOnUiThread {
+                                    text_translated.text = ""
+                                    text_detected.text = ""
+                                    frame = 0
+                                }
+                            }
+                        }
+                    }
 
-//                    for (block in it.resultForText.textBlocks){
-//                        block.boundingBox?.let {
-//                            if (it.top > imgHeight/100 *30 && it.bottom < imgHeight/100 * 50)
-//                                localResult += block.text + "\n"
-//                        }
-//                    }'
-                    localResult += it.result.text + "\n"
-                    Log.d("Text", localResult)
-                    if (localResult != resultForText){ resultForText = localResult }
-                    localResult = ""
-                    localResult += it.result.text + " "
-                    Log.d("Text", localResult)
-                    if (localResult != resultForTranslate){ resultForTranslate = localResult }
-                    if (mode == "RealTime") updateRealTime() else updateOne()
+                    if (it.result == null) {
+                        (context as Cam2RealTimeActivity).apply {
+                            runOnUiThread {
+                                frame = 0
+                                text_translated.text = ""
+                            }
+                        }
+                    }
                     image?.close()
                 }
                 .addOnFailureListener { _ ->
