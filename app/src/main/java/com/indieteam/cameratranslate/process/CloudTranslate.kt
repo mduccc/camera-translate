@@ -5,6 +5,7 @@ import android.util.Log
 import com.indieteam.cameratranslate.ui.Cam2RealTimeActivity
 import com.indieteam.cameratranslate.ui.ResultActivity
 import kotlinx.android.synthetic.main.activity_cam2_real_time.*
+import kotlinx.android.synthetic.main.activity_result.*
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
@@ -65,7 +66,7 @@ class CloudTranslate{
                                     if (translated.isNotBlank()) {
                                         (context as ResultActivity).apply {
                                             runOnUiThread {
-                                                this.text_translated.text = translated
+                                                this.text_translated_.text = translated
                                             }
                                         }
                                     }

@@ -36,7 +36,6 @@ class TextRecognizeInImage(private val context: Context, private val mode: Strin
 
     private fun updateOne(){
         (context as ResultActivity).apply {
-            runOnUiThread { result_.text = localResult }
             cloudTranslate.toVietnamese(localResult)
         }
     }
