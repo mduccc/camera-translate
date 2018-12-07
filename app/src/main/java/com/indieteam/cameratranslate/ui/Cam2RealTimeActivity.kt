@@ -233,7 +233,6 @@ class Cam2RealTimeActivity : AppCompatActivity() {
 
         getScreenSize()
         setPreviewSize()
-        handlerStart()
         Log.d("previewWidth", previewWidth.toString())
         Log.d("previewHeight", previewHeight.toString())
         textRecognizeInImage = TextRecognizeInImage(this, "RealTime")
@@ -288,6 +287,8 @@ class Cam2RealTimeActivity : AppCompatActivity() {
         super.onResume()
         wakeScreen = power.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "wakeScreen")
         wakeScreen.acquire(10*60*1000L /*10 minutes*/)
+        handlerStart()
+        frame = 0
         countResume++
         if (countResume > 1) { handlerStart(); openCamera2() }
     }
