@@ -1,7 +1,7 @@
 package com.indieteam.cameratranslate.process
 
 import android.content.Context
-import android.media.Image
+import android.graphics.Bitmap
 import android.net.Uri
 import android.util.Log
 import com.google.firebase.ml.vision.FirebaseVision
@@ -9,7 +9,6 @@ import com.google.firebase.ml.vision.common.FirebaseVisionImage
 import com.indieteam.cameratranslate.ui.Cam2RealTimeActivity
 import com.indieteam.cameratranslate.ui.ResultActivity
 import kotlinx.android.synthetic.main.activity_cam2_real_time.*
-import kotlinx.android.synthetic.main.activity_result.*
 
 class TextRecognizeInImage(private val context: Context, private val mode: String) {
 
@@ -28,9 +27,11 @@ class TextRecognizeInImage(private val context: Context, private val mode: Strin
 
     private fun updateRealTime(){
         (context as Cam2RealTimeActivity).apply {
-            runOnUiThread { text_detected.text = localResult }
-            frame = 0
-            cloudTranslate.toVietnamese(localResult)
+            runOnUiThread {
+                handler?.post {
+                    cloudTranslate.toVietnamese(localResult)
+                }
+            }
         }
     }
 
@@ -40,13 +41,24 @@ class TextRecognizeInImage(private val context: Context, private val mode: Strin
         }
     }
 
-    fun run(image: Image?, rotation: Int?, uri: Uri?){
+    fun build(){
+        if (mode == "RealTime"){
+            context as Cam2RealTimeActivity
+            val bitmap = context.texture_preview.getBitmap(context.previewWidth/4, context.previewHeight/4)
+            context.handler?.post {
+                run(bitmap, null)
+            }
+        }
+    }
+
+    fun run(bitmap: Bitmap?, uri: Uri?){
         localResult = ""
         val imageVision: FirebaseVisionImage
         if (mode == "RealTime") {
-            (context as Cam2RealTimeActivity).frame = 1
-            imageVision = FirebaseVisionImage.fromMediaImage(image!!, rotation!!)
-        }else{ imageVision = FirebaseVisionImage.fromFilePath(context as ResultActivity, uri!!) }
+            imageVision = FirebaseVisionImage.fromBitmap(bitmap!!)
+        }else{
+            imageVision = FirebaseVisionImage.fromFilePath(context as ResultActivity, uri!!)
+        }
 
         textRecognizer.processImage(imageVision)
                 .addOnCompleteListener { it ->
@@ -66,13 +78,16 @@ class TextRecognizeInImage(private val context: Context, private val mode: Strin
                         Log.d("Text", localResult)
                         if (localResult.isNotBlank()) {
                             localResult = localResult.trim()
-                            if (mode == "RealTime") updateRealTime() else updateOne()
+                            if (mode == "RealTime")
+                                updateRealTime()
+                            else
+                                updateOne()
                         }else {
                             (context as Cam2RealTimeActivity).apply {
                                 runOnUiThread {
-                                    text_translated.text = ""
                                     text_detected.text = ""
-                                    frame = 0
+                                    text_translated.text = ""
+                                    textRecognizeInImage.build()
                                 }
                             }
                         }
@@ -81,16 +96,14 @@ class TextRecognizeInImage(private val context: Context, private val mode: Strin
                     if (it.result == null) {
                         (context as Cam2RealTimeActivity).apply {
                             runOnUiThread {
-                                frame = 0
+                                text_detected.text = ""
                                 text_translated.text = ""
                             }
                         }
                     }
-                    image?.close()
                 }
-                .addOnFailureListener { _ ->
+                .addOnFailureListener {
                     Log.d("Recognizer Listen", "False")
-                    if (mode == "RealTime") (context as Cam2RealTimeActivity).frame = 0
                 }
     }
 

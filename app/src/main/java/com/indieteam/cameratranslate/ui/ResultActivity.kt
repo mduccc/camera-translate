@@ -28,7 +28,7 @@ class ResultActivity : AppCompatActivity() {
                     }
 
                     override fun onResourceReady(resource: Drawable?, model: Any?, target: Target<Drawable>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean {
-                        textRecognizeInImage.run(null, null, uriPhoto)
+                        textRecognizeInImage.run(null, uriPhoto)
                         return false
                     }
                 })

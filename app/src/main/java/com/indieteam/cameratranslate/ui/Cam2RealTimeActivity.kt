@@ -1,113 +1,101 @@
 package com.indieteam.cameratranslate.ui
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.ImageFormat
 import android.graphics.Point
 import android.graphics.SurfaceTexture
-import android.hardware.camera2.CameraCaptureSession
-import android.hardware.camera2.CameraCharacteristics
-import android.hardware.camera2.CameraDevice
-import android.hardware.camera2.CameraManager
-import android.hardware.camera2.CaptureRequest
-import android.media.ImageReader
+import android.hardware.camera2.*
+import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
-import android.support.v4.app.ActivityCompat
-import android.support.v4.content.ContextCompat
-import android.support.v7.app.AppCompatActivity
-import android.os.Bundle
 import android.os.PowerManager
 import android.support.constraint.ConstraintLayout
+import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.util.SparseIntArray
 import android.view.Surface
 import android.view.TextureView
-import android.widget.RelativeLayout
-import com.google.firebase.ml.vision.common.FirebaseVisionImageMetadata
 import com.indieteam.cameratranslate.R
 import com.indieteam.cameratranslate.process.TextRecognizeInImage
 import kotlinx.android.synthetic.main.activity_cam2_real_time.*
 
-import java.util.ArrayList
-
+@Suppress("DEPRECATION")
 class Cam2RealTimeActivity : AppCompatActivity() {
 
-    private val codeRequest = 1
-    private var permissions = 0
-    private var camManager: CameraManager? = null
-    private var camera2: CameraDevice? = null
+    private var cameraManager: CameraManager? = null
+    private var cameraDevice: CameraDevice? = null
+    private var cameraCharacteristics: CameraCharacteristics? = null
+    private var captureRequest: CaptureRequest.Builder? = null
+    var handler: Handler? = null
+    private var handlerThread: HandlerThread? = null
+    lateinit var textRecognizeInImage: TextRecognizeInImage
+    private lateinit var powerManager: PowerManager
+    private lateinit var wakeLook: PowerManager.WakeLock
+    private lateinit var drawArea: DrawArea
+
     var sWidth = 0
     var sHeight = 0
-    private var previewWidth = 0
+    var previewWidth = 0
     var previewHeight = 0
     private var camWidth = 0
     private var camHeight = 0
-    private var cameraCharacteristics: CameraCharacteristics? = null
-    private var imageReader: ImageReader? = null
-    private val quality = 3
-    private var cameraRequest: CaptureRequest.Builder? = null
-    private var backgroundHandler: Handler? = null
-    private var backgroundThread: HandlerThread? = null
-    private lateinit var textRecognizeInImage: TextRecognizeInImage
-    private lateinit var power: PowerManager
-    private lateinit var wakeScreen: PowerManager.WakeLock
-    var frame = 0
-    private lateinit var drawArea: DrawArea
+    private var camBack = "null"
+    private var camFront = "null"
+    private var resume = 0
 
-    private fun cameraId(): ArrayList<String> {
-        val list = ArrayList<String>()
-        try { for (i in camManager!!.cameraIdList) { list.add(i) }
-        } catch (e: Exception) { Log.d("Logic Err", e.toString()) }
-        return list
+    private var hasCamera = { packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA) }
+
+    private fun getCameraId() {
+        try {
+            for (i in cameraManager!!.cameraIdList) {
+                if (cameraManager!!.getCameraCharacteristics(i).get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_BACK)
+                    camBack = i
+                if (cameraManager!!.getCameraCharacteristics(i).get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT)
+                    camFront = i
+            }
+        } catch (e: Exception) {}
     }
-
-    private var countResume = 0
 
     inner class CameraOpenCallBack : CameraDevice.StateCallback() {
 
         override fun onOpened(camera: CameraDevice) {
-            this@Cam2RealTimeActivity.camera2 = camera
+            this@Cam2RealTimeActivity.cameraDevice = camera
             getCameraSize()
             CameraPreview().startPreview()
         }
 
         override fun onDisconnected(camera: CameraDevice) {
-            this@Cam2RealTimeActivity.camera2!!.close()
-            Log.d("Err Logic", "onDisconnected")
+            this@Cam2RealTimeActivity.cameraDevice!!.close()
+            Log.d("CameraOpenCallBack", "onDisconnected")
         }
 
         override fun onError(camera: CameraDevice, error: Int) {
-            this@Cam2RealTimeActivity.camera2!!.close()
-            Log.d("Err Logic", "onDisconnected")
+            this@Cam2RealTimeActivity.cameraDevice!!.close()
+            Log.d("CameraOpenCallBack", "onDisconnected")
         }
 
+    }
+
+    inner class CaptureCallback: CameraCaptureSession.CaptureCallback() {
+        init {
+            textRecognizeInImage.build()
+        }
     }
 
     inner class CaptureSessionCallBack : CameraCaptureSession.StateCallback() {
 
         override fun onConfigured(session: CameraCaptureSession) {
-            try { session.setRepeatingRequest(cameraRequest!!.build(), null, backgroundHandler)
-            } catch (e: Exception) { Log.d("Logic Err", e.toString()) }
+            try {
+                session.setRepeatingRequest(captureRequest!!.build(), CaptureCallback(), handler)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
 
         override fun onConfigureFailed(session: CameraCaptureSession) {
-            Log.d("Logic Err", "onConfigureFailed")
-        }
-
-    }
-
-    inner class OnFrame: ImageReader.OnImageAvailableListener{
-        override fun onImageAvailable(p0: ImageReader?) {
-            val image = p0?.acquireNextImage()
-            //Log.d("Frame", frame.toString())
-            if (image != null && frame == 0){
-                textRecognizeInImage.run(image, getRotationCamera(), null)
-            }
-            image?.close()
+            Log.d("CaptureSessionCallBack", "onConfigureFailed")
         }
 
     }
@@ -115,35 +103,50 @@ class Cam2RealTimeActivity : AppCompatActivity() {
     inner class CameraPreview {
 
         fun startPreview() {
+            setPreviewSize()
             val texture_view_params = texture_preview.layoutParams as ConstraintLayout.LayoutParams
-            texture_view_params.apply { width = previewWidth; height = previewHeight }
+            texture_view_params.apply {
+                width = previewWidth
+                height = previewHeight
+            }
             texture_preview.layoutParams = texture_view_params
 
             val detected_layout_params = detected_layout.layoutParams as ConstraintLayout.LayoutParams
-            detected_layout_params.apply { width = previewWidth; height = previewHeight }
+            detected_layout_params.apply {
+                width = previewWidth
+                height = previewHeight
+            }
             detected_layout.layoutParams = detected_layout_params
 
             drawArea = DrawArea(this@Cam2RealTimeActivity)
             cam_realtime_layout.addView(drawArea)
             val surfaceTexture = texture_preview.surfaceTexture
+
             //Do phan giai nay se hien thi o tren man hinh preview
             surfaceTexture.setDefaultBufferSize(previewWidth, previewHeight)
-            val outputSurface = arrayListOf<Surface>(Surface(surfaceTexture), imageReader!!.surface)
 
-            try { cameraRequest = camera2!!.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
-            } catch (e: Exception) { Log.d("Logic Err", e.toString()) }
+            val outputSurface = arrayListOf<Surface>(Surface(surfaceTexture))
 
-            cameraRequest?.let {
-                it.apply { addTarget(Surface(surfaceTexture)); addTarget(imageReader!!.surface) }
-                try { camera2!!.createCaptureSession(outputSurface, CaptureSessionCallBack(), null)
-                } catch (e: Exception) { Log.d("Logic Err", e.toString()) }
+            try {
+                captureRequest = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
+                captureRequest!!.apply {
+                    addTarget(Surface(surfaceTexture))
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            try {
+                cameraDevice!!.createCaptureSession(outputSurface, CaptureSessionCallBack(), null)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
 
     }
 
     internal inner class SurfaceTextureListener : TextureView.SurfaceTextureListener {
-        override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) { openCamera2() }
+        override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) { openCamera() }
 
         override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {}
 
@@ -162,23 +165,17 @@ class Cam2RealTimeActivity : AppCompatActivity() {
                     grantResults[2] == PackageManager.PERMISSION_GRANTED) { run() }
     }
 
-    private fun checkPermission() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE), codeRequest)
-        else
-            permissions = 1
-    }
-
     private fun getCameraSize() {
-        try { cameraCharacteristics = camManager!!.getCameraCharacteristics(cameraId()[0])
-        } catch (e: Exception) { Log.d("Logic Err", e.toString()) }
+        try {
+            cameraCharacteristics = cameraManager!!.getCameraCharacteristics(camBack)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
 
-        //sap xep giam dan
         cameraCharacteristics?.let{
             val configMap = it.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
             val size = configMap!!.getOutputSizes(ImageFormat.YUV_420_888)
+            // Sort max first
             for (i in 0 until size.size - 1)
                 for (j in i + 1 until size.size)
                     if (size[i].width < size[j].width) {
@@ -203,23 +200,23 @@ class Cam2RealTimeActivity : AppCompatActivity() {
     }
 
     private fun setPreviewSize(){
-        previewWidth = sWidth
-        previewHeight = sWidth/3 * 4
+        previewWidth = camWidth
+        previewHeight = camHeight
     }
 
-    private fun getScreenSize() {
+    private fun setScreenSize() {
         val point = Point()
         windowManager.defaultDisplay.getSize(point)
         sWidth = point.x
         sHeight = point.y
     }
 
-    private fun openCamera2() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            checkPermission()
-        } else {
-            try { camManager!!.openCamera(cameraId()[0], CameraOpenCallBack(), null)
-            } catch (e: Exception) { Log.d("Logic Err", e.toString()) }
+    @SuppressLint("MissingPermission")
+    private fun openCamera() {
+        try {
+            cameraManager!!.openCamera(camBack, CameraOpenCallBack(), null)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -231,29 +228,34 @@ class Cam2RealTimeActivity : AppCompatActivity() {
             it.append(Surface.ROTATION_270, 180)
         }
 
-        getScreenSize()
-        setPreviewSize()
+        cameraManager = this.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+        setScreenSize()
+        getCameraId()
+
+        Log.d("camera back", camBack)
+        if (camBack == "null")
+            finish()
         Log.d("previewWidth", previewWidth.toString())
         Log.d("previewHeight", previewHeight.toString())
+
+        powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
         textRecognizeInImage = TextRecognizeInImage(this, "RealTime")
-        camManager = this.getSystemService(Context.CAMERA_SERVICE) as CameraManager
-        imageReader = ImageReader.newInstance(previewWidth / quality, previewHeight / quality, ImageFormat.YUV_420_888, 1)
-        imageReader!!.setOnImageAvailableListener(OnFrame(), backgroundHandler)
-        power = getSystemService(Context.POWER_SERVICE) as PowerManager
     }
 
-    private fun handlerStart() {
-        backgroundThread = HandlerThread("Thread_camera2")
-        backgroundThread!!.start()
-        backgroundHandler = Handler(backgroundThread!!.looper)
+    private fun startHandlerThread() {
+        handlerThread = HandlerThread("Thread_camera2")
+        handlerThread!!.start()
+        handler = Handler(handlerThread!!.looper)
     }
 
-    private fun handlerCancel() {
-        if (backgroundThread != null && backgroundHandler != null) {
+    private fun cancelHandlerThread() {
+        if (handlerThread != null && handler != null) {
             try {
-                backgroundHandler!!.removeCallbacks(backgroundThread)
-                backgroundThread!!.quitSafely()
-            } catch (e: Exception) { Log.d("Logic Err", e.toString()) }
+                handler!!.removeCallbacks(handlerThread)
+                handlerThread!!.quitSafely()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -265,55 +267,39 @@ class Cam2RealTimeActivity : AppCompatActivity() {
         val ORIENTATIONS = SparseIntArray()
     }
 
-    // In document Google MLkit
-    private fun getRotationCamera(): Int{
-        val deviceRotation = windowManager.defaultDisplay.rotation
-        var rotationCompensation = ORIENTATIONS.get(deviceRotation)
-
-        val sensorOrientation = camManager!!.getCameraCharacteristics(cameraId()[0])
-                .get(CameraCharacteristics.SENSOR_ORIENTATION)
-        rotationCompensation = (rotationCompensation + sensorOrientation!! + 270) / 360
-        return when(rotationCompensation){
-            0 -> FirebaseVisionImageMetadata.ROTATION_0
-            90 -> FirebaseVisionImageMetadata.ROTATION_90
-            180 -> FirebaseVisionImageMetadata.ROTATION_180
-            270 -> FirebaseVisionImageMetadata.ROTATION_270
-            else -> FirebaseVisionImageMetadata.ROTATION_90
-        }
+    override fun onBackPressed() {
+        super.onBackPressed()
+        finish()
     }
+
 
     @SuppressLint("InvalidWakeLockTag")
     override fun onResume() {
         super.onResume()
-        wakeScreen = power.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "wakeScreen")
-        wakeScreen.acquire(10*60*1000L /*10 minutes*/)
-        handlerStart()
-        frame = 0
-        countResume++
-        if (countResume > 1) { handlerStart(); openCamera2() }
+        wakeLook = powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "wakeLook")
+        wakeLook.acquire(10*60*1000L /*10 minutes*/)
+        startHandlerThread()
+        resume++
+        if (resume > 1)
+            openCamera()
     }
 
     override fun onPause() {
         super.onPause()
-        wakeScreen.release()
-        try { camera2!!.close(); handlerCancel()
-        } catch (e: Exception) { Log.d("Logic Err", e.toString()) }
-    }
-
-    override fun onBackPressed() {
-        val intent = Intent(this, ModeActivity::class.java)
-        startActivity(intent)
-        finish()
+        try {
+            cameraDevice!!.close()
+            cancelHandlerThread()
+            wakeLook.release()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_cam2_real_time)
         init()
-        checkPermission()
-        if (permissions == 1)
+        if (hasCamera())
             run()
-        else
-            checkPermission()
     }
 }
