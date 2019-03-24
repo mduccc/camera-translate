@@ -15,8 +15,11 @@ import android.support.constraint.ConstraintLayout
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.util.SparseIntArray
+import android.view.MotionEvent
 import android.view.Surface
 import android.view.TextureView
+import android.view.View.GONE
+import android.view.View.VISIBLE
 import com.indieteam.cameratranslate.R
 import com.indieteam.cameratranslate.process.TextRecognizeInImage
 import kotlinx.android.synthetic.main.activity_cam2_real_time.*
@@ -34,6 +37,8 @@ class Cam2RealTimeActivity : AppCompatActivity() {
     private lateinit var powerManager: PowerManager
     private lateinit var wakeLook: PowerManager.WakeLock
     private lateinit var drawArea: DrawArea
+    var imageShowed = false
+    var click = false
 
     var sWidth = 0
     var sHeight = 0
@@ -45,17 +50,37 @@ class Cam2RealTimeActivity : AppCompatActivity() {
     private var camFront = "null"
     private var resume = 0
 
+    private val onDetect = object : OnDetect {
+        override fun onDetected(text: String) {
+            if (click)
+                runOnUiThread {
+                    text_detected.text = text
+                }
+        }
+
+        override fun onTranslated(text: String) {
+            runOnUiThread {
+                text_translated.text = text
+            }
+        }
+    }
+
     private var hasCamera = { packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA) }
 
     private fun getCameraId() {
         try {
             for (i in cameraManager!!.cameraIdList) {
-                if (cameraManager!!.getCameraCharacteristics(i).get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_BACK)
-                    camBack = i
+                Log.d("Camera Id", i)
+                if (cameraManager!!.getCameraCharacteristics(i).get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_BACK) {
+                    if (camBack == "null")
+                        camBack = i
+                }
+
                 if (cameraManager!!.getCameraCharacteristics(i).get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT)
                     camFront = i
             }
-        } catch (e: Exception) {}
+        } catch (e: Exception) {
+        }
     }
 
     inner class CameraOpenCallBack : CameraDevice.StateCallback() {
@@ -78,9 +103,10 @@ class Cam2RealTimeActivity : AppCompatActivity() {
 
     }
 
-    inner class CaptureCallback: CameraCaptureSession.CaptureCallback() {
+    inner class CaptureCallback : CameraCaptureSession.CaptureCallback() {
         init {
-            textRecognizeInImage.build()
+            imageShowed = true
+            Log.d("Image Show", "Showed")
         }
     }
 
@@ -146,23 +172,31 @@ class Cam2RealTimeActivity : AppCompatActivity() {
     }
 
     internal inner class SurfaceTextureListener : TextureView.SurfaceTextureListener {
-        override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) { openCamera() }
+        override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
+            openCamera()
+        }
 
         override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {}
 
-        override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean { return false }
+        override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
+            return false
+        }
 
         override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {}
     }
 
-    private fun textureViewListen() { texture_preview!!.surfaceTextureListener = SurfaceTextureListener() }
+    private fun textureViewListen() {
+        texture_preview!!.surfaceTextureListener = SurfaceTextureListener()
+    }
 
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         if (requestCode == 1)
             if (grantResults.size == 3 && grantResults[0] == PackageManager.PERMISSION_GRANTED &&
                     grantResults[1] == PackageManager.PERMISSION_GRANTED &&
-                    grantResults[2] == PackageManager.PERMISSION_GRANTED) { run() }
+                    grantResults[2] == PackageManager.PERMISSION_GRANTED) {
+                run()
+            }
     }
 
     private fun getCameraSize() {
@@ -172,7 +206,7 @@ class Cam2RealTimeActivity : AppCompatActivity() {
             e.printStackTrace()
         }
 
-        cameraCharacteristics?.let{
+        cameraCharacteristics?.let {
             val configMap = it.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
             val size = configMap!!.getOutputSizes(ImageFormat.YUV_420_888)
             // Sort max first
@@ -185,12 +219,13 @@ class Cam2RealTimeActivity : AppCompatActivity() {
                     }
 
             val needRatio = 4f / 3f
-            Log.d("needRadio", needRatio.toString())
+            Log.d("Need Radio", needRatio.toString())
             for (i in size) {
+                Log.d("Camera Size", "Width: ${i.width}, Height: ${i.height}")
                 val ratio = i.width.toFloat() / i.height.toFloat()
-                Log.d("realRatio", ratio.toString())
-                if (ratio == needRatio) {
-                    Log.d("cameraSize", "width: ${i.width}, height: ${i.height}")
+                Log.d("Real Ratio", ratio.toString())
+                if (ratio == needRatio /*&& i.width.toFloat() <= sWidth*/) {
+                    Log.d("Camera Size Selected", "Width: ${i.width}, Height: ${i.height}")
                     camWidth = i.height
                     camHeight = i.width
                     break
@@ -199,9 +234,9 @@ class Cam2RealTimeActivity : AppCompatActivity() {
         }
     }
 
-    private fun setPreviewSize(){
-        previewWidth = camWidth
-        previewHeight = camHeight
+    private fun setPreviewSize() {
+        previewWidth = sWidth
+        previewHeight = (sHeight / 4) * 3
     }
 
     private fun setScreenSize() {
@@ -232,14 +267,14 @@ class Cam2RealTimeActivity : AppCompatActivity() {
         setScreenSize()
         getCameraId()
 
-        Log.d("camera back", camBack)
+        Log.d("Camera Back", camBack)
         if (camBack == "null")
             finish()
-        Log.d("previewWidth", previewWidth.toString())
-        Log.d("previewHeight", previewHeight.toString())
+        Log.d("Preview Width", previewWidth.toString())
+        Log.d("Preview Height", previewHeight.toString())
 
         powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-        textRecognizeInImage = TextRecognizeInImage(this, "RealTime")
+        textRecognizeInImage = TextRecognizeInImage(this, onDetect)
     }
 
     private fun startHandlerThread() {
@@ -267,6 +302,25 @@ class Cam2RealTimeActivity : AppCompatActivity() {
         val ORIENTATIONS = SparseIntArray()
     }
 
+    override fun onTouchEvent(event: MotionEvent?): Boolean {
+        val action = event?.action
+        action?.let {
+            if (action == MotionEvent.ACTION_DOWN) {
+                Log.d("Touch", "DOWN")
+                click = true
+                title_real_time.visibility = VISIBLE
+                textRecognizeInImage.build()
+            }
+            if (action == MotionEvent.ACTION_UP) {
+                Log.d("Touch", "UP")
+                click = false
+                title_real_time.visibility = GONE
+            }
+        }
+
+        return super.onTouchEvent(event)
+    }
+
     override fun onBackPressed() {
         super.onBackPressed()
         finish()
@@ -277,7 +331,7 @@ class Cam2RealTimeActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         wakeLook = powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "wakeLook")
-        wakeLook.acquire(10*60*1000L /*10 minutes*/)
+        wakeLook.acquire(10 * 60 * 1000L /*10 minutes*/)
         startHandlerThread()
         resume++
         if (resume > 1)

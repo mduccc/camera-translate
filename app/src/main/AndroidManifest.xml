@@ -28,9 +28,11 @@
             android:name="com.google.firebase.ml.vision.DEPENDENCIES"
             android:value="ocr" />
 
-        <activity android:name=".ui.Cam2RealTimeActivity">
+        <activity android:name=".ui.Cam2RealTimeActivity"
+            android:screenOrientation="portrait">
         </activity>
-        <activity android:name=".ui.ModeActivity">
+        <activity android:name=".ui.ModeActivity"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
