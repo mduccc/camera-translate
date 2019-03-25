@@ -309,7 +309,7 @@ class Cam2RealTimeActivity : AppCompatActivity() {
                 Log.d("Touch", "DOWN")
                 click = true
                 title_real_time.visibility = VISIBLE
-                textRecognizeInImage.build()
+                textRecognizeInImage.catchImage()
             }
             if (action == MotionEvent.ACTION_UP) {
                 Log.d("Touch", "UP")

@@ -72,7 +72,7 @@ class CloudTranslate (private val onDetect: OnDetect) {
     private fun next() {
         (context as Cam2RealTimeActivity).apply {
             runOnUiThread {
-                textRecognizeInImage.build()
+                textRecognizeInImage.catchImage()
             }
         }
     }
