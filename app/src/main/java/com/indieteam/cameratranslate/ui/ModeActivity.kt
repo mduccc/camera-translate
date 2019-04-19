@@ -49,9 +49,15 @@ class ModeActivity : AppCompatActivity() {
         }
     }
 
+    private fun setInfo() {
+        val packageManager = packageManager.getPackageInfo(packageName, 0)
+        version.text = "V ${packageManager.versionName}"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_mode)
+        setInfo()
         selectMode()
     }
 }

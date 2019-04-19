@@ -6,16 +6,16 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".ui.Cam2RealTimeActivity"
-    android:background="@color/colorBlack">
+    android:background="@color/colorWhite">
 
     <TextView
         android:id="@+id/title_real_time"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Đang dò..."
-        android:textColor="@color/colorWhite"
+        android:textColor="@color/colorBlue"
         android:gravity="center"
-        android:textSize="25dp"
+        android:textSize="23dp"
         app:layout_constraintBottom_toTopOf="@+id/texture_preview"
         app:layout_constraintTop_toTopOf="parent"
         android:visibility="gone"/>
@@ -87,8 +87,8 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:text="Chạm m.hình để phát hiện v.bản"
-        android:textColor="@color/colorWhite"
-        android:textSize="25dp"
+        android:textColor="@color/colorBlue"
+        android:textSize="23dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/texture_preview"
         tools:layout_editor_absoluteX="0dp" />
