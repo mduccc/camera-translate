@@ -21,8 +21,13 @@ import android.view.TextureView
 import android.view.View.GONE
 import android.view.View.VISIBLE
 import com.indieteam.cameratranslate.R
+import com.indieteam.cameratranslate.process.CloudTranslate
 import com.indieteam.cameratranslate.process.TextRecognizeInImage
 import kotlinx.android.synthetic.main.activity_cam2_real_time.*
+import android.app.ProgressDialog
+import android.app.Dialog
+import android.widget.Toast
+
 
 @Suppress("DEPRECATION")
 class Cam2RealTimeActivity : AppCompatActivity() {
@@ -50,12 +55,28 @@ class Cam2RealTimeActivity : AppCompatActivity() {
     private var camFront = "null"
     private var resume = 0
 
+    private val posArr = IntArray(2)
+    private lateinit var dialog: Dialog
+
     private val onDetect = object : OnDetect {
+        override fun onAPIError() {
+            runOnUiThread {
+                //dialog.cancel()
+                Toast.makeText(this@Cam2RealTimeActivity, "Kiểm tra kết nối mạng", Toast.LENGTH_LONG).show()
+                finish()
+            }
+        }
+
+        override fun onAPILive() {
+            runOnUiThread {
+                //dialog.cancel()
+            }
+        }
+
         override fun onDetected(text: String) {
-            if (click)
-                runOnUiThread {
-                    text_detected.text = text
-                }
+            runOnUiThread {
+                text_detected.text = text
+            }
         }
 
         override fun onTranslated(text: String) {
@@ -64,6 +85,13 @@ class Cam2RealTimeActivity : AppCompatActivity() {
             }
         }
     }
+
+    private fun checkAPILive() {
+        handler?.post {
+            CloudTranslate(onDetect).isApiLive()
+        }
+    }
+
 
     private var hasCamera = { packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA) }
 
@@ -147,6 +175,9 @@ class Cam2RealTimeActivity : AppCompatActivity() {
             drawArea = DrawArea(this@Cam2RealTimeActivity)
             cam_realtime_layout.addView(drawArea)
             val surfaceTexture = texture_preview.surfaceTexture
+
+            scroll_view_detected.y = posArr[1].toFloat() + 30f
+            scroll_view_translated.y = posArr[1].toFloat() + texture_preview.height - 30f - scroll_view_translated.height
 
             //Do phan giai nay se hien thi o tren man hinh preview
             surfaceTexture.setDefaultBufferSize(previewWidth, previewHeight)
@@ -295,6 +326,7 @@ class Cam2RealTimeActivity : AppCompatActivity() {
     }
 
     private fun run() {
+        getPosOfTexture()
         textureViewListen()
     }
 
@@ -309,7 +341,8 @@ class Cam2RealTimeActivity : AppCompatActivity() {
                 Log.d("Touch", "DOWN")
                 click = true
                 title_real_time.visibility = VISIBLE
-                textRecognizeInImage.catchImage()
+                if (!textRecognizeInImage.cloudTranslate.translating)
+                    textRecognizeInImage.catchImage()
             }
             if (action == MotionEvent.ACTION_UP) {
                 Log.d("Touch", "UP")
@@ -319,6 +352,15 @@ class Cam2RealTimeActivity : AppCompatActivity() {
         }
 
         return super.onTouchEvent(event)
+    }
+
+    private fun getPosOfTexture(){
+        texture_preview.getLocationOnScreen(posArr)
+    }
+
+    private fun showDialog() {
+        dialog = ProgressDialog.show(this, "Đang kết nối tới máy chủ",
+                "Vui lòng đợi...", true)
     }
 
     override fun onBackPressed() {
@@ -333,6 +375,14 @@ class Cam2RealTimeActivity : AppCompatActivity() {
         wakeLook = powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "wakeLook")
         wakeLook.acquire(10 * 60 * 1000L /*10 minutes*/)
         startHandlerThread()
+
+        if (resume == 0) {
+            //showDialog()
+            //checkAPILive()
+            if (hasCamera())
+                run()
+        }
+
         resume++
         if (resume > 1)
             openCamera()
@@ -353,7 +403,5 @@ class Cam2RealTimeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_cam2_real_time)
         init()
-        if (hasCamera())
-            run()
     }
 }

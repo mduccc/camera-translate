@@ -14,14 +14,13 @@ class TextRecognizeInImage(private val context: Context, private val onDetect: O
     private val textRecognizer = FirebaseVision.getInstance()
             .onDeviceTextRecognizer
 
-    private var result = ""
-    private val cloudTranslate = CloudTranslate(onDetect)
+    val cloudTranslate = CloudTranslate(onDetect)
 
     init {
         cloudTranslate.init(context)
     }
 
-    private fun updateRealTime() {
+    private fun updateRealTime(result: String) {
         (context as Cam2RealTimeActivity).apply {
             runOnUiThread {
                 handler?.post {
@@ -33,7 +32,9 @@ class TextRecognizeInImage(private val context: Context, private val onDetect: O
 
     fun catchImage() {
         context as Cam2RealTimeActivity
-        if (context.click && context.imageShowed) {
+        if (context.click) {
+            onDetect.onDetected("")
+            onDetect.onTranslated("")
             val bitmap = context.texture_preview.getBitmap(context.previewWidth / 4, context.previewHeight / 4)
             context.handler?.post {
                 run(bitmap)
@@ -42,9 +43,8 @@ class TextRecognizeInImage(private val context: Context, private val onDetect: O
     }
 
     fun run(bitmap: Bitmap?) {
-        result = ""
+        var result = ""
         val imageVision: FirebaseVisionImage = FirebaseVisionImage.fromBitmap(bitmap!!)
-
 
         textRecognizer.processImage(imageVision)
                 .addOnCompleteListener { it ->
@@ -62,19 +62,15 @@ class TextRecognizeInImage(private val context: Context, private val onDetect: O
                             }
                         }
                         Log.d("Text", result)
+
                         if (result.isNotBlank()) {
                             result = result.trim()
-                            updateRealTime()
-
-                        } else {
-                            onDetect.onDetected("")
-                            onDetect.onTranslated("")
-                            catchImage()
+                            updateRealTime(result)
                         }
                     } ?: kotlin.run {
                         onDetect.onDetected("")
                         onDetect.onTranslated("")
-                        //catchImage()
+                        catchImage()
                     }
                 }
                 .addOnFailureListener {
