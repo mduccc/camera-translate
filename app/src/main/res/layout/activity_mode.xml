@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/colorWhite"
     tools:context=".ui.ModeActivity">
 
     <LinearLayout
@@ -40,7 +41,7 @@
         android:gravity="center"
         android:orientation="vertical"
         app:layout_constraintBottom_toTopOf="@+id/linearLayout2"
-        app:layout_constraintHeight_percent="0.2"
+        app:layout_constraintHeight_percent="0.3"
         app:layout_constraintTop_toBottomOf="@+id/linearLayout"
         tools:layout_editor_absoluteX="0dp">
 
@@ -55,7 +56,34 @@
             android:paddingRight="15dp"
             android:paddingBottom="46dp"
             android:text="Mở Camera"
-            android:textColor="@color/colorWhite" />
+            android:textColor="@color/colorWhite"
+            style="?android:attr/borderlessButtonStyle" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_horizontal"
+            android:layout_marginTop="10dp">
+
+            <Button
+                android:id="@+id/share_app"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:drawableRight="@drawable/ic_share_black_24dp"
+                android:background="@color/colorWhite"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_marginRight="10dp"/>
+
+            <Button
+                android:id="@+id/app_info"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:drawableLeft="@drawable/ic_info_outline_black_24dp"
+                android:background="@color/colorWhite"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_marginLeft="10dp"/>
+        </LinearLayout>
 
     </LinearLayout>
 

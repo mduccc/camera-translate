@@ -52,8 +52,8 @@ class CloudTranslate (private val onDetect: OnDetect) {
 
     fun toVietnamese(input: String) {
         translating = true
+        onDetect.onTranslate()
         onDetect.onDetected(input)
-        onDetect.onTranslated("(Đang dịch...)")
         if (cache.containsKey(input)) {
            onDetect.onTranslated(cache[input]!!)
         } else {

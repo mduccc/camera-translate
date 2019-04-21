@@ -3,9 +3,6 @@ package com.indieteam.cameratranslate.ui
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
-import android.graphics.ImageFormat
-import android.graphics.Point
-import android.graphics.SurfaceTexture
 import android.hardware.camera2.*
 import android.os.Bundle
 import android.os.Handler
@@ -26,11 +23,47 @@ import com.indieteam.cameratranslate.process.TextRecognizeInImage
 import kotlinx.android.synthetic.main.activity_cam2_real_time.*
 import android.app.ProgressDialog
 import android.app.Dialog
+import android.content.Intent
+import android.graphics.*
+import android.view.View
 import android.widget.Toast
+import com.indieteam.cameratranslate.process.DatabaseQuery
 
 
 @Suppress("DEPRECATION")
-class Cam2RealTimeActivity : AppCompatActivity() {
+class Cam2RealTimeActivity : AppCompatActivity(), RealTimeClickEvent {
+
+    override fun onHistoryClick() {
+        this@Cam2RealTimeActivity.apply {
+            show.setOnClickListener {
+                val intent = Intent(this, SavedActivity::class.java)
+                startActivity(intent)
+                overridePendingTransition(R.anim.abc_slide_in_top, R.anim.abc_slide_in_top)
+            }
+        }
+    }
+
+    override fun onSaveClick() {
+        this@Cam2RealTimeActivity.apply {
+            save.setOnClickListener {
+                runOnUiThread {
+                    val word_raw = text_detected.text.toString()
+                    val word_translate = text_translated.text.toString()
+
+                    if (word_raw.isNotEmpty() && word_translate.isNotEmpty()) {
+                        val insert = database.insert(word_raw, word_translate)
+                        if (insert) {
+                            Toast.makeText(this, "Đã lưu", Toast.LENGTH_SHORT).show()
+                            save.visibility = View.GONE
+                        }
+                        else {
+                            Toast.makeText(this, "Lỗi", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     private var cameraManager: CameraManager? = null
     private var cameraDevice: CameraDevice? = null
@@ -58,7 +91,26 @@ class Cam2RealTimeActivity : AppCompatActivity() {
     private val posArr = IntArray(2)
     private lateinit var dialog: Dialog
 
+
+    private lateinit var database: DatabaseQuery
+
     private val onDetect = object : OnDetect {
+        override fun onEmpty() {
+            runOnUiThread {
+                text_detected.text = ""
+                text_translated.text = ""
+                save.visibility = View.GONE
+            }
+        }
+
+        override fun onTranslate() {
+            runOnUiThread {
+                text_detected.text = ""
+                text_translated.text = "(Đang dịch...)"
+                save.visibility = View.GONE
+            }
+        }
+
         override fun onAPIError() {
             runOnUiThread {
                 //dialog.cancel()
@@ -75,13 +127,16 @@ class Cam2RealTimeActivity : AppCompatActivity() {
 
         override fun onDetected(text: String) {
             runOnUiThread {
+                scroll_view_detected.y = posArr[1].toFloat() + 30f
                 text_detected.text = text
             }
         }
 
         override fun onTranslated(text: String) {
             runOnUiThread {
+                scroll_view_translated.y = posArr[1].toFloat() + texture_preview.height - 30f - scroll_view_translated.height
                 text_translated.text = text
+                save.visibility = View.VISIBLE
             }
         }
     }
@@ -176,9 +231,6 @@ class Cam2RealTimeActivity : AppCompatActivity() {
             cam_realtime_layout.addView(drawArea)
             val surfaceTexture = texture_preview.surfaceTexture
 
-            scroll_view_detected.y = posArr[1].toFloat() + 30f
-            scroll_view_translated.y = posArr[1].toFloat() + texture_preview.height - 30f - scroll_view_translated.height
-
             //Do phan giai nay se hien thi o tren man hinh preview
             surfaceTexture.setDefaultBufferSize(previewWidth, previewHeight)
 
@@ -219,7 +271,6 @@ class Cam2RealTimeActivity : AppCompatActivity() {
     private fun textureViewListen() {
         texture_preview!!.surfaceTextureListener = SurfaceTextureListener()
     }
-
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         if (requestCode == 1)
@@ -301,11 +352,17 @@ class Cam2RealTimeActivity : AppCompatActivity() {
         Log.d("Camera Back", camBack)
         if (camBack == "null")
             finish()
+
         Log.d("Preview Width", previewWidth.toString())
         Log.d("Preview Height", previewHeight.toString())
 
         powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
         textRecognizeInImage = TextRecognizeInImage(this, onDetect)
+
+        database = DatabaseQuery(this)
+
+        onHistoryClick()
+        onSaveClick()
     }
 
     private fun startHandlerThread() {

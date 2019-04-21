@@ -26,7 +26,22 @@ class DrawArea(context: Context): View(context){
     private fun drawArea(canvas: Canvas){
         Log.d("texture_preview pos", "${posArr[0]}, ${posArr[1]}")
         paint.apply { strokeWidth = 5f; color = Color.WHITE; style = Paint.Style.STROKE }
-        canvas.drawRect(widthPercent*5, posArr[1].toFloat() , widthPercent*95, posArr[1].toFloat() + (context as Cam2RealTimeActivity).texture_preview.height, paint)
+        canvas.drawRect(widthPercent*3, posArr[1].toFloat() + widthPercent*1 , widthPercent*97
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                , posArr[1].toFloat() + (context as Cam2RealTimeActivity).texture_preview.height - widthPercent*1, paint)
     }
 
     override fun onDraw(canvas: Canvas?) {

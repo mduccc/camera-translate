@@ -33,8 +33,7 @@ class TextRecognizeInImage(private val context: Context, private val onDetect: O
     fun catchImage() {
         context as Cam2RealTimeActivity
         if (context.click) {
-            onDetect.onDetected("")
-            onDetect.onTranslated("")
+           onDetect.onEmpty()
             val bitmap = context.texture_preview.getBitmap(context.previewWidth / 4, context.previewHeight / 4)
             context.handler?.post {
                 run(bitmap)
@@ -68,8 +67,7 @@ class TextRecognizeInImage(private val context: Context, private val onDetect: O
                             updateRealTime(result)
                         }
                     } ?: kotlin.run {
-                        onDetect.onDetected("")
-                        onDetect.onTranslated("")
+                        onDetect.onEmpty()
                         catchImage()
                     }
                 }

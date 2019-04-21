@@ -8,17 +8,46 @@
     tools:context=".ui.Cam2RealTimeActivity"
     android:background="@color/colorWhite">
 
+    <Button
+        android:id="@+id/show"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@color/colorWhite"
+        android:textSize="15sp"
+        android:layout_marginLeft="10dp"
+        style="?android:attr/borderlessButtonStyle"
+        android:drawableLeft="@drawable/ic_format_list_bulleted_black_24dp"
+        app:layout_constraintBottom_toTopOf="@+id/texture_preview"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/save"
+        style="?android:attr/borderlessButtonStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@color/colorWhite"
+        android:layout_marginRight="10dp"
+        android:drawableRight="@drawable/ic_done_black_24dp"
+        android:textSize="15sp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@+id/texture_preview"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <TextView
         android:id="@+id/title_real_time"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:gravity="center"
         android:text="Đang dò..."
         android:textColor="@color/colorBlue"
-        android:gravity="center"
-        android:textSize="23dp"
+        android:textSize="18dp"
+        android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@+id/texture_preview"
-        app:layout_constraintTop_toTopOf="parent"
-        android:visibility="gone"/>
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextureView
         android:id="@+id/texture_preview"
@@ -50,7 +79,9 @@
             android:layout_width="match_parent"
             android:layout_height="130dp"
             android:layout_alignParentTop="true"
-            android:layout_marginTop="30dp">
+            android:layout_marginTop="30dp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp">
 
             <TextView
                 android:id="@+id/text_detected"
@@ -67,7 +98,9 @@
             android:layout_width="match_parent"
             android:layout_height="150dp"
             android:layout_alignParentBottom="true"
-            android:layout_marginBottom="30dp">
+            android:layout_marginBottom="30dp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp">
 
             <TextView
                 android:id="@+id/text_translated"

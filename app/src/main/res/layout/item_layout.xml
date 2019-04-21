@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<android.support.v7.widget.CardView android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    card_view:cardCornerRadius="5dp"
+    android:layout_marginBottom="15dp"
+    android:layout_marginTop="15dp"
+    android:layout_marginLeft="15dp"
+    android:layout_marginRight="15dp"
+    android:background="@color/colorWhite"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:id="@+id/word_raw"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Word Raw"
+            android:background="@color/colorBlue"
+            android:textColor="@color/colorWhite"
+            android:paddingLeft="15dp"
+            android:paddingRight="15dp"/>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorBlue"/>
+
+        <TextView
+            android:id="@+id/word_translate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Word Translated"
+            android:background="@color/colorGreen"
+            android:textColor="@color/colorWhite"
+            android:paddingLeft="15dp"
+            android:paddingRight="15dp"/>
+    </LinearLayout>
+</android.support.v7.widget.CardView>
