@@ -12,8 +12,8 @@ android {
         applicationId "com.indieteam.cameratranslate"
         minSdkVersion 21
         targetSdkVersion 28
-        versionCode 8
-        versionName "1.0.0"
+        versionCode 9
+        versionName "1.1.0"
         testInstrumentationRunner "android.support.isApiLive.runner.AndroidJUnitRunner"
     }
     buildTypes {
